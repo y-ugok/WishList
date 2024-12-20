@@ -1,83 +1,94 @@
-"use strict";
-const open =
-  document.getElementById("open") || document.getElementById("open-disabled");
-const register = document.querySelector("#register-dialog");
-const registerButton = document.getElementById("register-item-btn");
-const registerCloseButton = document.getElementById("register-close");
-const edit = document.getElementById("edit-dialog");
-const updateButton = document.getElementById("update-item-btn");
-const deleteButton = document.getElementById("del-item-btn");
-const editCloseButton = document.getElementById("edit-close");
-const iconType = document.getElementById("icon-type");
-const listText = document.getElementById("item-content");
-const newIconType = document.getElementById("new-icon-type");
-const newListText = document.getElementById("new-item-content");
+'use strict';
+
+let firestore;
+async function loadFirebase() {
+  const module = await import('./firebase.js');
+  firestore = new module.Firebase();
+  firestore.loadDefaultList();
+}
+loadFirebase();
+
+const open = document.getElementById('open') || document.getElementById('open-disabled');
+const register = document.querySelector('#register-dialog');
+const registerButton = document.getElementById('register-item-btn');
+const registerCloseButton = document.getElementById('register-close');
+const edit = document.getElementById('edit-dialog');
+const updateButton = document.getElementById('update-item-btn');
+const deleteButton = document.getElementById('del-item-btn');
+const editCloseButton = document.getElementById('edit-close');
+const iconType = document.getElementById('icon-type');
+const listText = document.getElementById('item-content');
+const newIconType = document.getElementById('new-icon-type');
+const newListText = document.getElementById('new-item-content');
 
 let editTargetItem = null; // 編集対象のアイテムを保存するための変数
 // ページに応じてlistKeyを決定
 function getListKey() {
-  if (window.location.pathname.includes("self.html")) {
-    return "self-list"; // self.html の場合は self-list を使う
+  if (window.location.pathname.includes('self.html')) {
+    return 'self-list'; // self.html の場合は self-list を使う
   } else {
-    return "partner-list"; // index.html の場合は partner-list を使う
+    return 'partner-list'; // index.html の場合は partner-list を使う
   }
 }
-loadDefaultList();
 
 // ダイアログを開く・閉じる
-open.addEventListener("click", () => {
+open.addEventListener('click', () => {
   // モーダル表示前にクラスを付与
-  register.classList.add("show-from");
-  newListText.value = "";
+  register.classList.add('show-from');
+  newListText.value = '';
   register.showModal();
   requestAnimationFrame(() => {
     // モーダル表示後にクラスを削除してアニメーションを開始
-    register.classList.remove("show-from");
+    register.classList.remove('show-from');
   });
 });
 
 function show(dialog) {
-  dialog.classList.add("show-from");
+  dialog.classList.add('show-from');
   dialog.showModal();
 
   requestAnimationFrame(() => {
     // モーダル表示後にクラスを削除してアニメーションを開始
-    dialog.classList.remove("show-from");
+    dialog.classList.remove('show-from');
   });
 }
 function close(dialog) {
   // モーダル非表示前にクラスを付与してアニメーションを開始
-  dialog.classList.add("hide-to");
+  dialog.classList.add('hide-to');
 
   dialog.addEventListener(
-    "transitionend",
+    'transitionend',
     () => {
       // アニメーション終了後にクラスを削除し、モーダルを閉じる
-      dialog.classList.remove("hide-to");
+      dialog.classList.remove('hide-to');
       dialog.close();
     },
     {
-      once: true,
+      once: true
     }
   );
 }
 
-registerCloseButton.addEventListener("click", () => {
+registerCloseButton.addEventListener('click', () => {
   close(register);
 });
 
-register.addEventListener("click", (event) => {
+register.addEventListener('click', (event) => {
   if (event.target === register) {
     register.close();
   }
 });
-editCloseButton.addEventListener("click", () => {
+editCloseButton.addEventListener('click', () => {
   edit.close();
 });
 
 // セッションストレージにアイテムを保存
-function saveToSessionStorage(item) {
+async function saveToSessionStorage(item) {
   const listKey = getListKey(); // 現在のページに基づいてlistKeyを取得
+  // Firestoreに追加
+  const docID = await firestore.addData(listKey, item);
+  // console.log(docID);
+  item.docID = docID;
   let storedItems = JSON.parse(sessionStorage.getItem(listKey)) || [];
   storedItems.unshift(item);
   sessionStorage.setItem(listKey, JSON.stringify(storedItems));
@@ -86,9 +97,16 @@ function saveToSessionStorage(item) {
 }
 
 // セッションストレージからアイテムを削除;
-function removeFromSessionStorage(itemText) {
+async function removeFromSessionStorage(itemText) {
   const listKey = getListKey(); // 現在のページに基づいてlistKeyを取得
   let storedItems = JSON.parse(sessionStorage.getItem(listKey)) || [];
+
+  // Firebaseから削除
+  const deleteItem = storedItems.find((item) => item.text == itemText);
+  if (deleteItem) {
+    await firestore.deleteData(listKey, deleteItem.docID);
+  }
+
   // テキストに基づいてアイテムを削除
   storedItems = storedItems.filter((item) => item.text !== itemText);
   sessionStorage.setItem(listKey, JSON.stringify(storedItems));
@@ -99,13 +117,13 @@ function loadList() {
   const listKey = getListKey(); // 現在のページに基づいてlistKeyを取得
   let storedItems = JSON.parse(sessionStorage.getItem(listKey)) || [];
 
-  const ul = document.getElementById("list");
-  ul.textContent = ""; // 二重に表示されないようにする
+  const ul = document.getElementById('list');
+  ul.textContent = ''; // 二重に表示されないようにする
 
   storedItems.forEach((item) => {
-    const li = document.createElement("li");
+    const li = document.createElement('li');
     li.classList.add(item.icon);
-    if (listKey === "self-list") {
+    if (listKey === 'self-list') {
       li.innerHTML = `
          <div class="wrapper">
          <div class="rectangle">
@@ -134,15 +152,23 @@ function loadList() {
   });
 
   // アイテム削除ボタンのクリックイベントを追加
-  const completeButtons = document.querySelectorAll(".complete-btn");
+  const completeButtons = document.querySelectorAll('.complete-btn');
   completeButtons.forEach((button) => {
-    button.addEventListener("click", (event) => {
-      const li = event.target.closest("li");
-      const itemText = li.querySelector(".text").textContent;
+    button.addEventListener('click', async (event) => {
+      const li = event.target.closest('li');
+      const itemText = li.querySelector('.text').textContent;
+      let storedItems = JSON.parse(sessionStorage.getItem('history-list')) || [];
+      const item = storedItems.find((item) => item.text == itemText);
+
+      // 履歴に記録（in history.js）
+      console.log(item);
+      if (item) {
+        await completeHistory(item);
+      }
+
       // セッションストレージから削除
       removeFromSessionStorage(itemText);
-      // 履歴に記録（in history.js）
-      completeHistory(itemText);
+
       // DOMから削除
       li.remove();
       show(register);
@@ -153,45 +179,45 @@ function loadList() {
 }
 
 function addDotsFunctionality() {
-  const dotIcons = document.querySelectorAll(".list-flex>img");
+  const dotIcons = document.querySelectorAll('.list-flex>img');
   dotIcons.forEach((dotIcon) => {
-    dotIcon.addEventListener("click", (event) => {
-      const itemElement = event.target.closest("li");
+    dotIcon.addEventListener('click', (event) => {
+      const itemElement = event.target.closest('li');
       editTargetItem = itemElement; // 編集対象のリストアイテムを保持
 
       // ダイアログに既存のリストアイテムの内容をセット
-      const itemText = itemElement.querySelector(".text").textContent;
-      const itemIcon = itemElement.classList.contains("cook")
-        ? "cook"
-        : itemElement.classList.contains("communication")
-        ? "communication"
-        : itemElement.classList.contains("action")
-        ? "action"
-        : itemElement.classList.contains("shopping")
-        ? "shopping"
-        : "cleaning";
+      const itemText = itemElement.querySelector('.text').textContent;
+      const itemIcon = itemElement.classList.contains('cook')
+        ? 'cook'
+        : itemElement.classList.contains('communication')
+        ? 'communication'
+        : itemElement.classList.contains('action')
+        ? 'action'
+        : itemElement.classList.contains('shopping')
+        ? 'shopping'
+        : 'cleaning';
 
       iconType.value = itemIcon; // アイコンタイプを設定
       listText.value = itemText; // リストの内容を設定
 
-      deleteButton.addEventListener("click", () => {
+      deleteButton.addEventListener('click', () => {
         itemElement.remove();
       });
       // == モーダルを表示する==//
-      edit.classList.add("show-from");
+      edit.classList.add('show-from');
       edit.showModal();
 
       // モーダルとフッターの位置を調整
       adjustDialogPosition(edit);
       requestAnimationFrame(() => {
         // モーダル表示後にクラスを削除してアニメーションを開始
-        edit.classList.remove("show-from");
+        edit.classList.remove('show-from');
       });
     });
   });
 }
 /* 背景をクリックした時に編集ダイアログを閉じる */
-edit.addEventListener("click", (event) => {
+edit.addEventListener('click', (event) => {
   // 背景がクリックされた場合は閉じる。
   // ダイアログの見た目のスタイルは .inner に設定しているので、
   // コンテンツ部分がクリックされた場合、target は必ず .inner かその子孫要素になる。
@@ -201,7 +227,7 @@ edit.addEventListener("click", (event) => {
   }
 });
 // 削除ボタンのクリックイベント
-deleteButton.addEventListener("click", () => {
+deleteButton.addEventListener('click', () => {
   removeFromSessionStorage(listText.value); // セッションストレージから削除
   removeHistory(listText.value); // 履歴を更新（in history.js）
   // listText.remove(); // DOMから削除
@@ -209,27 +235,27 @@ deleteButton.addEventListener("click", () => {
 });
 
 // アイテム更新ボタンの処理
-updateButton.addEventListener("click", () => {
+updateButton.addEventListener('click', () => {
   // バリデーション: リストアイテムの内容が空の場合は追加を許可しない
   if (!listText.value.trim()) {
-    alert("リストアイテムの内容を入力してください。");
+    alert('リストアイテムの内容を入力してください。');
     return; // 関数を終了する
   }
   const newItem = {
     icon: iconType.value,
-    text: listText.value,
+    text: listText.value
   };
 
   // 編集モードの場合、リストアイテムを更新する
-  const oldText = editTargetItem.querySelector(".text").textContent;
+  const oldText = editTargetItem.querySelector('.text').textContent;
   const oldIcon = editTargetItem.classList.value;
   if (oldText === listText.value && oldIcon === newItem.icon) {
-    alert("アイコンの種類とリストアイテム内容が同じです");
+    alert('アイコンの種類とリストアイテム内容が同じです');
     return; // 関数を終了する
   }
 
   updateSessionStorageItem(oldText, newItem); // セッションストレージのアイテムを更新
-  editTargetItem.querySelector(".text").textContent = newItem.text; // リストのテキストを更新
+  editTargetItem.querySelector('.text').textContent = newItem.text; // リストのテキストを更新
   editTargetItem.className = newItem.icon; // アイコンのクラスを更新
 
   edit.close(); // ダイアログを閉じる
@@ -239,24 +265,24 @@ updateButton.addEventListener("click", () => {
 
 const MAX_LIST_ITEMS = 5;
 // アイテム追加ボタンの処理
-registerButton.addEventListener("click", () => {
-  const listKey = "self-list"; // 現在のページに基づいてlistKeyを取得
+registerButton.addEventListener('click', () => {
+  const listKey = 'self-list'; // 現在のページに基づいてlistKeyを取得
   let storedItems = JSON.parse(sessionStorage.getItem(listKey)) || [];
 
   // リストの数が5個以上の場合、エラーメッセージを表示して処理を終了
   if (storedItems.length >= MAX_LIST_ITEMS) {
-    alert("登録できるリストアイテム数は5つまでとなっています");
+    alert('登録できるリストアイテム数は5つまでとなっています');
     return; // 処理を終了する
   }
 
   // バリデーション: リストアイテムの内容が空の場合は追加を許可しない
   if (!newListText.value.trim()) {
-    alert("リストアイテムの内容を入力してください。");
+    alert('リストアイテムの内容を入力してください。');
     return; // 処理を終了する
   }
   const newItem = {
     icon: newIconType.value,
-    text: newListText.value,
+    text: newListText.value
   };
 
   // 新規追加処理
@@ -291,29 +317,29 @@ window.onload = () => {
 };
 
 // === 植物成長の画像変化用のコード === //
-let completedTasks = parseInt(localStorage.getItem("completedTasks")) || 0;
+let completedTasks = parseInt(localStorage.getItem('completedTasks')) || 0;
 
 function completeTask() {
   completedTasks++;
-  localStorage.setItem("completedTasks", completedTasks); // completedTasksをlocalStorageに保存
+  localStorage.setItem('completedTasks', completedTasks); // completedTasksをlocalStorageに保存
   updatePlantImage();
 }
 
 // 植物の画像を更新する関数
 function updatePlantImage() {
-  const plantImage = document.getElementById("plantImage");
+  const plantImage = document.getElementById('plantImage');
   // list.jsの時にsrcエラーの回避
   if (!plantImage) return;
   if (completedTasks >= 0 && completedTasks < 4) {
-    plantImage.src = "./img/plant1.png";
+    plantImage.src = './img/plant1.png';
   } else if (completedTasks >= 4 && completedTasks < 8) {
-    plantImage.src = "./img/plant2.png";
+    plantImage.src = './img/plant2.png';
   } else if (completedTasks >= 8 && completedTasks < 12) {
-    plantImage.src = "./img/plant3.png";
+    plantImage.src = './img/plant3.png';
   } else if (completedTasks >= 12 && completedTasks < 16) {
-    plantImage.src = "./img/plant4.png";
+    plantImage.src = './img/plant4.png';
   } else {
-    plantImage.src = "./img/plant5.png";
+    plantImage.src = './img/plant5.png';
   }
 }
 // フッター位置の調整

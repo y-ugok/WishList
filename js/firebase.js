@@ -1,5 +1,12 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
-import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc
+} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
 
 const apikey = localStorage.getItem('API_KEY');
 
@@ -16,21 +23,38 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const historySnapshot = await getDocs(collection(db, 'history-list'));
-const historyList = historySnapshot.docs.map((doc) => doc.data());
+export class Firebase {
+  async loadDefaultList() {
+    const historySnapshot = await getDocs(collection(db, 'history-list'));
+    const historyList = historySnapshot.docs.map((doc) => ({ ...doc.data(), docID: doc.id }));
 
-console.log(historyList);
+    console.log(historyList);
+    sessionStorage.setItem('history-list', JSON.stringify(historyList));
 
-const selfSnapshot = await getDocs(collection(db, 'self-list'));
-const selfList = selfSnapshot.docs.map((doc) => doc.data());
+    const selfSnapshot = await getDocs(collection(db, 'self-list'));
+    const selfList = selfSnapshot.docs.map((doc) => ({ ...doc.data(), docID: doc.id }));
 
-console.log(selfList);
+    console.log(selfList);
+    sessionStorage.setItem('self-list', JSON.stringify(selfList));
 
-const partnerSnapshot = await getDocs(collection(db, 'partner-list'));
-const partnerList = partnerSnapshot.docs.map((doc) => doc.data());
+    const partnerSnapshot = await getDocs(collection(db, 'partner-list'));
+    const partnerList = partnerSnapshot.docs.map((doc) => ({ ...doc.data(), docID: doc.id }));
 
-console.log(partnerList);
+    console.log(partnerList);
+    sessionStorage.setItem('partner-list', JSON.stringify(partnerList));
+  }
 
-// ここから下、セッションストレージにデータを移動する
+  async addData(collectionName, data) {
+    // console.log(collectionName);
+    // console.log(data);
+    const docRef = await addDoc(collection(db, collectionName), data);
+    // console.log(docRef, docRef.id);
+    return docRef.id;
+  }
 
-export default db;
+  async deleteData(collectionName, docID) {
+    console.log(db, collectionName, docID);
+
+    await deleteDoc(doc(db, collectionName, docID));
+  }
+}
