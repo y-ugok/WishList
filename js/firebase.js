@@ -21,4 +21,16 @@ const historyList = historySnapshot.docs.map((doc) => doc.data());
 
 console.log(historyList);
 
+const selfSnapshot = await getDocs(collection(db, 'self-list'));
+const selfList = selfSnapshot.docs.map((doc) => doc.data());
+
+console.log(selfList);
+
+const partnerSnapshot = await getDocs(collection(db, 'partner-list'));
+const partnerList = partnerSnapshot.docs.map((doc) => doc.data());
+
+console.log(partnerList);
+
+// ここから下、セッションストレージにデータを移動する
+
 export default db;
