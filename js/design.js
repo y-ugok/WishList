@@ -56,7 +56,7 @@ function applyThemeColor(color) {
   addStyleElements.forEach((elem) => {
     elem.style.borderBottomColor = color; // 下線の色をテーマカラーに設定
   });
-  console.log(color); // 取得したテーマカラーを確認
+  // console.log(color); // 取得したテーマカラーを確認
 
   const confirmReset = document.getElementById("confirm-reset");
   if (confirmReset) {

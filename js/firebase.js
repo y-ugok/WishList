@@ -53,7 +53,7 @@ export class Firebase {
   }
 
   async deleteData(collectionName, docID) {
-    console.log(db, collectionName, docID);
+    console.log(collectionName, docID);
 
     await deleteDoc(doc(db, collectionName, docID));
   }

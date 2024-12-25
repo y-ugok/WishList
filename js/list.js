@@ -101,12 +101,6 @@ async function removeFromSessionStorage(itemText) {
   const listKey = getListKey(); // 現在のページに基づいてlistKeyを取得
   let storedItems = JSON.parse(sessionStorage.getItem(listKey)) || [];
 
-  // Firebaseから削除
-  const deleteItem = storedItems.find((item) => item.text == itemText);
-  if (deleteItem) {
-    await firestore.deleteData(listKey, deleteItem.docID);
-  }
-
   // テキストに基づいてアイテムを削除
   storedItems = storedItems.filter((item) => item.text !== itemText);
   sessionStorage.setItem(listKey, JSON.stringify(storedItems));
@@ -157,14 +151,19 @@ function loadList() {
     button.addEventListener('click', async (event) => {
       const li = event.target.closest('li');
       const itemText = li.querySelector('.text').textContent;
-      let storedItems = JSON.parse(sessionStorage.getItem('history-list')) || [];
-      const item = storedItems.find((item) => item.text == itemText);
+      let storedItems = JSON.parse(sessionStorage.getItem('partner-list')) || [];
+      const compItem = storedItems.find((item) => item.text == itemText);
+
+      if (!compItem) {
+        console.log('completed item is ' + compItem);
+        return false;
+      }
+
+      // firebaseから削除
+      await firestore.deleteData(listKey, compItem.docID);
 
       // 履歴に記録（in history.js）
-      console.log(item);
-      if (item) {
-        await completeHistory(item);
-      }
+      await completeHistory(compItem);
 
       // セッションストレージから削除
       removeFromSessionStorage(itemText);
@@ -226,8 +225,14 @@ edit.addEventListener('click', (event) => {
     edit.close();
   }
 });
+
 // 削除ボタンのクリックイベント
-deleteButton.addEventListener('click', () => {
+deleteButton.addEventListener('click', async () => {
+
+  let storedItems = JSON.parse(sessionStorage.getItem('self-list')) || [];
+  const delItem = storedItems.find((item) => item.text == listText.value);
+
+  await firestore.deleteData('self-list', delItem.docID); // firebaseから削除
   removeFromSessionStorage(listText.value); // セッションストレージから削除
   removeHistory(listText.value); // 履歴を更新（in history.js）
   // listText.remove(); // DOMから削除
