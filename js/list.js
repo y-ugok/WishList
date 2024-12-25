@@ -85,13 +85,17 @@ editCloseButton.addEventListener('click', () => {
 // セッションストレージにアイテムを保存
 async function saveToSessionStorage(item) {
   const listKey = getListKey(); // 現在のページに基づいてlistKeyを取得
+
   // Firestoreに追加
   const docID = await firestore.addData(listKey, item);
   // console.log(docID);
   item.docID = docID;
+
+  // セッションストレージに保存
   let storedItems = JSON.parse(sessionStorage.getItem(listKey)) || [];
   storedItems.unshift(item);
-  sessionStorage.setItem(listKey, JSON.stringify(storedItems));
+  sessionStorage.setItem(listKey, JSON.stringify(storedItems)); 
+
   // 履歴を更新（in history.js）
   registerHistory(item.text);
 }
@@ -110,6 +114,7 @@ async function removeFromSessionStorage(itemText) {
 function loadList() {
   const listKey = getListKey(); // 現在のページに基づいてlistKeyを取得
   let storedItems = JSON.parse(sessionStorage.getItem(listKey)) || [];
+  storedItems.sort((a, b) => a.date.seconds < b.date.seconds ? 1 : -1);
 
   const ul = document.getElementById('list');
   ul.textContent = ''; // 二重に表示されないようにする
@@ -232,9 +237,14 @@ deleteButton.addEventListener('click', async () => {
   let storedItems = JSON.parse(sessionStorage.getItem('self-list')) || [];
   const delItem = storedItems.find((item) => item.text == listText.value);
 
-  await firestore.deleteData('self-list', delItem.docID); // firebaseから削除
-  removeFromSessionStorage(listText.value); // セッションストレージから削除
-  removeHistory(listText.value); // 履歴を更新（in history.js）
+  // firebaseから削除
+  await firestore.deleteData('self-list', delItem.docID); 
+  
+  // セッションストレージから削除
+  removeFromSessionStorage(listText.value); 
+
+  // 履歴を更新（in history.js）  
+  removeHistory(listText.value);
   // listText.remove(); // DOMから削除
   edit.close();
 });
@@ -246,9 +256,13 @@ updateButton.addEventListener('click', () => {
     alert('リストアイテムの内容を入力してください。');
     return; // 関数を終了する
   }
+  const now = Math.trunc(Date.now() / 1000);
   const newItem = {
     icon: iconType.value,
-    text: listText.value
+    text: listText.value,
+    date: {
+      seconds: now
+    }
   };
 
   // 編集モードの場合、リストアイテムを更新する
@@ -285,14 +299,17 @@ registerButton.addEventListener('click', () => {
     alert('リストアイテムの内容を入力してください。');
     return; // 処理を終了する
   }
+  const now = Math.trunc(Date.now() / 1000);
   const newItem = {
     icon: newIconType.value,
-    text: newListText.value
+    text: newListText.value,
+    date: {
+      seconds: now
+    }
   };
 
   // 新規追加処理
   saveToSessionStorage(newItem);
-
   register.close(); // ダイアログを閉じる
   loadList();
 });
