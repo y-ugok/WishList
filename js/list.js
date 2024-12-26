@@ -175,7 +175,6 @@ function loadList() {
 
       // DOMから削除
       li.remove();
-      show(register);
       adjustDialogPosition(register);
     });
   });
