@@ -195,14 +195,17 @@ function addDotsFunctionality() {
       const itemText = itemElement.querySelector(".text").textContent;
       const itemIcon = itemElement.classList.contains("cook")
         ? "cook"
+        : itemElement.classList.contains("cleaning")
+        ? "cleaning"
         : itemElement.classList.contains("communication")
         ? "communication"
         : itemElement.classList.contains("action")
         ? "action"
         : itemElement.classList.contains("shopping")
         ? "shopping"
-        : "cleaning";
-
+        : itemElement.classList.contains("education")
+        ? "education"
+        : "other";
       iconType.value = itemIcon; // アイコンタイプを設定
       listText.value = itemText; // リストの内容を設定
 
