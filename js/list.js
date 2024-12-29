@@ -4,7 +4,9 @@ let firestore;
 async function loadFirebase() {
   const module = await import("./firebase.js");
   firestore = new module.Firebase();
-  firestore.loadDefaultList();
+  await firestore.loadDefaultList();
+  //Promiseが解決するまで処理を一時停止して解決後にその結果を返す
+  loadList();
 }
 loadFirebase();
 

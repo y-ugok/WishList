@@ -25,12 +25,14 @@ const db = getFirestore(app);
 
 export class Firebase {
   async loadDefaultList() {
+    // // 初期データを設定
+
     const historySnapshot = await getDocs(collection(db, "history-list"));
     const historyList = historySnapshot.docs.map((doc) => ({
       ...doc.data(),
       docID: doc.id,
     }));
-
+    //doc.data()はFirestoreのドキュメントのフィールドをオブジェクトとして取得するメソッドで..doc.data()はそのデータを新しいオブジェクトに展開し、他のデータ(docID)と一緒に管理
     console.log(historyList);
     sessionStorage.setItem("history-list", JSON.stringify(historyList));
 
@@ -51,8 +53,10 @@ export class Firebase {
 
     console.log(partnerList);
     sessionStorage.setItem("partner-list", JSON.stringify(partnerList));
+    // これまでのデータをリスト表示
+    // loadList();
   }
-
+  //関数前に付けることでその関数が非同期関数になって常にPromiseを返す
   async addData(collectionName, data) {
     // console.log(collectionName);
     // console.log(data);
