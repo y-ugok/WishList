@@ -23,6 +23,10 @@ const iconType = document.getElementById("icon-type");
 const listText = document.getElementById("item-content");
 const newIconType = document.getElementById("new-icon-type");
 const newListText = document.getElementById("new-item-content");
+//優先度の変更
+const priority = document.getElementById("priority-select");
+// 優先度
+const newpriority = document.getElementById("new-priority-select");
 
 let editTargetItem = null; // 編集対象のアイテムを保存するための変数
 // ページに応じてlistKeyを決定
@@ -118,8 +122,22 @@ async function removeFromSessionStorage(itemText) {
 function loadList() {
   const listKey = getListKey(); // 現在のページに基づいてlistKeyを取得
   let storedItems = JSON.parse(sessionStorage.getItem(listKey)) || [];
-  storedItems.sort((a, b) => (a.date.seconds < b.date.seconds ? 1 : -1));
+
+  // priorityで並び替え（高 -> 中 -> 低）
+  const priorityOrder = { high: 1, middle: 2, low: 3 }; // 優先度を数値に変換
+
+  storedItems.sort((a, b) => {
+    if (priorityOrder[a.priority] < priorityOrder[b.priority]) {
+      return -1;
+    }
+    if (priorityOrder[a.priority] > priorityOrder[b.priority]) {
+      return 1;
+    }
+    return 0;
+  });
+  // storedItems.sort((a, b) => (a.date.seconds < b.date.seconds ? 1 : -1));
   //最新(データが大きい方が)1になって前にくるように並び替える
+
   const ul = document.getElementById("list");
   ul.textContent = ""; // 二重に表示されないようにする
 
@@ -263,9 +281,11 @@ updateButton.addEventListener("click", () => {
     return; // 関数を終了する
   }
   const now = Math.trunc(Date.now() / 1000);
+
   const newItem = {
     icon: iconType.value,
     text: listText.value,
+    priority: newpriority.value || "middle",
     date: {
       seconds: now,
     },
@@ -275,7 +295,7 @@ updateButton.addEventListener("click", () => {
   const oldText = editTargetItem.querySelector(".text").textContent;
   const oldIcon = editTargetItem.classList.value;
   if (oldText === listText.value && oldIcon === newItem.icon) {
-    alert("アイコンの種類とリストアイテム内容が同じです");
+    // alert("アイコンの種類とリストアイテム内容が同じです");
     return; // 関数を終了する
   }
 
@@ -309,6 +329,7 @@ registerButton.addEventListener("click", () => {
   const newItem = {
     icon: newIconType.value,
     text: newListText.value,
+    priority: priority.value || "middle",
     date: {
       seconds: now,
     },

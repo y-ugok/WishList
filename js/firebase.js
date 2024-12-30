@@ -35,7 +35,6 @@ export class Firebase {
     //doc.data()はFirestoreのドキュメントのフィールドをオブジェクトとして取得するメソッドで..doc.data()はそのデータを新しいオブジェクトに展開し、他のデータ(docID)と一緒に管理
     console.log(historyList);
     sessionStorage.setItem("history-list", JSON.stringify(historyList));
-
     const selfSnapshot = await getDocs(collection(db, "self-list"));
     const selfList = selfSnapshot.docs.map((doc) => ({
       ...doc.data(),
